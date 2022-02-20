@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 	"unsafe"
 
@@ -209,7 +210,7 @@ func calculate_rank(clContext *cl.Context, queue *cl.CommandQueue, kernel *cl.Ke
 	kernel.SetArgBuffer(11, outKarmaBuf)
 	kernel.SetArgBuffer(12, outLuminocityBuf)
 
-	fmt.Println("Memory allocation and transfer (to device): %s", time.Since(start).String())
+	log.Println("Memory allocation and transfer (to device): %s", time.Since(start).String())
 
 	start = time.Now()
 
@@ -218,7 +219,7 @@ func calculate_rank(clContext *cl.Context, queue *cl.CommandQueue, kernel *cl.Ke
 		return nil, nil, nil, err
 	}
 
-	fmt.Println("Rank computation: %s", time.Since(start).String())
+	log.Println("Rank computation: %s", time.Since(start).String())
 
 	start = time.Now()
 
@@ -242,44 +243,46 @@ func calculate_rank(clContext *cl.Context, queue *cl.CommandQueue, kernel *cl.Ke
 		return nil, nil, nil, err
 	}
 
-	fmt.Println("Memory transfer (from device): %s", time.Since(start).String())
+	log.Println("Memory transfer (from device): %s", time.Since(start).String())
 
 	return rank, entropy, karma, nil
 }
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	device, err := getFirstOpenCLDevice()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	fmt.Printf("OpenCL device name: %s", device.Name())
+	log.Printf("OpenCL device name: %s\n", device.Name())
 
 	dev := []*cl.Device{device}
 	clContext, err := cl.CreateContext(dev)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 		return
 	}
 
 	queue, err := clContext.CreateCommandQueue(device, 0)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 		return
 	}
 
 	kernel, err := build_program_and_get_kernel(device, clContext)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 		return
 	}
 
 	rank, entropy, karma, err := calculate_rank(clContext, queue, kernel, nil, 0, nil, nil, nil, nil, nil, nil, 0, 0)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 		return
 	}
 
-	fmt.Println("Rank calculation result: ranks %d, entropy %d, karma %d", len(rank), len(entropy), len(karma))
+	log.Println("Rank calculation result: ranks %d, entropy %d, karma %d", len(rank), len(entropy), len(karma))
 }
